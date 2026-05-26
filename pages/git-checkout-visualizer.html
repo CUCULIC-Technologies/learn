@@ -1,0 +1,776 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>What Happens When You git checkout?</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700;800&family=VT323&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0e0a;
+    --bg-deep: #050805;
+    --green: #00ff66;
+    --green-dim: #00aa44;
+    --green-glow: #00ff6688;
+    --amber: #ffb000;
+    --red: #ff3344;
+    --cyan: #00ddff;
+    --magenta: #ff44aa;
+    --paper: #1a1f1a;
+    --border: #00ff6633;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    background: var(--bg-deep);
+    color: var(--green);
+    font-family: 'JetBrains Mono', monospace;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* CRT scanline overlay */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: repeating-linear-gradient(
+      to bottom,
+      transparent 0,
+      transparent 2px,
+      rgba(0, 255, 102, 0.03) 2px,
+      rgba(0, 255, 102, 0.03) 3px
+    );
+    pointer-events: none;
+    z-index: 100;
+  }
+
+  /* CRT flicker */
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: radial-gradient(ellipse at center, transparent 0%, rgba(0,0,0,0.4) 100%);
+    pointer-events: none;
+    z-index: 99;
+    animation: flicker 4s infinite;
+  }
+
+  @keyframes flicker {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.97; }
+    52% { opacity: 1; }
+  }
+
+  .container {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 40px 24px 80px;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* Header */
+  .header {
+    border: 2px solid var(--green);
+    padding: 24px;
+    margin-bottom: 48px;
+    position: relative;
+    background: linear-gradient(135deg, rgba(0,255,102,0.05), transparent);
+    box-shadow: 0 0 40px var(--green-glow), inset 0 0 20px rgba(0,255,102,0.05);
+  }
+
+  .header::before {
+    content: '● ● ●';
+    position: absolute;
+    top: 8px;
+    left: 12px;
+    font-size: 10px;
+    letter-spacing: 4px;
+    color: var(--green-dim);
+  }
+
+  .header::after {
+    content: 'TERMINAL.exe';
+    position: absolute;
+    top: 8px;
+    right: 12px;
+    font-size: 10px;
+    color: var(--green-dim);
+    letter-spacing: 2px;
+  }
+
+  .prompt {
+    color: var(--amber);
+    font-size: 14px;
+    margin-top: 12px;
+    margin-bottom: 8px;
+  }
+
+  .prompt .user { color: var(--cyan); }
+  .prompt .path { color: var(--magenta); }
+
+  h1 {
+    font-family: 'VT323', monospace;
+    font-size: clamp(40px, 7vw, 84px);
+    line-height: 0.95;
+    color: var(--green);
+    text-shadow:
+      0 0 10px var(--green-glow),
+      0 0 20px var(--green-glow),
+      0 0 40px var(--green-glow);
+    letter-spacing: 2px;
+    margin: 8px 0 16px;
+    animation: pulse-glow 3s ease-in-out infinite;
+  }
+
+  @keyframes pulse-glow {
+    0%, 100% { text-shadow: 0 0 10px var(--green-glow), 0 0 20px var(--green-glow), 0 0 40px var(--green-glow); }
+    50% { text-shadow: 0 0 12px var(--green), 0 0 30px var(--green), 0 0 60px var(--green-glow); }
+  }
+
+  .subtitle {
+    color: var(--green-dim);
+    font-size: 14px;
+    margin-bottom: 4px;
+  }
+
+  .cursor {
+    display: inline-block;
+    width: 12px;
+    height: 18px;
+    background: var(--green);
+    vertical-align: middle;
+    animation: blink 1s steps(1) infinite;
+    margin-left: 4px;
+  }
+
+  @keyframes blink {
+    0%, 50% { opacity: 1; }
+    51%, 100% { opacity: 0; }
+  }
+
+  /* Step blocks */
+  .step {
+    margin-bottom: 48px;
+    border-left: 3px solid var(--green);
+    padding-left: 24px;
+    position: relative;
+  }
+
+  .step-num {
+    position: absolute;
+    left: -22px;
+    top: -4px;
+    background: var(--bg-deep);
+    color: var(--green);
+    font-family: 'VT323', monospace;
+    font-size: 36px;
+    width: 44px;
+    height: 44px;
+    border: 2px solid var(--green);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 0 20px var(--green-glow);
+  }
+
+  .step h2 {
+    font-family: 'VT323', monospace;
+    font-size: 32px;
+    color: var(--green);
+    margin-bottom: 4px;
+    text-shadow: 0 0 8px var(--green-glow);
+    margin-left: 32px;
+  }
+
+  .step .tagline {
+    color: var(--amber);
+    font-size: 12px;
+    margin-bottom: 16px;
+    margin-left: 32px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+
+  .step p {
+    color: #c8e6c8;
+    line-height: 1.7;
+    font-size: 14px;
+    margin-bottom: 12px;
+  }
+
+  .step .highlight {
+    color: var(--amber);
+    font-weight: 700;
+  }
+
+  /* Code/diagram boxes */
+  .diagram {
+    background: var(--paper);
+    border: 1px solid var(--border);
+    padding: 20px;
+    margin: 16px 0;
+    font-size: 13px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .diagram::before {
+    content: attr(data-label);
+    position: absolute;
+    top: 0;
+    right: 0;
+    background: var(--green);
+    color: var(--bg-deep);
+    padding: 2px 10px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1px;
+  }
+
+  /* The branch switching demo */
+  .demo-zone {
+    background: var(--paper);
+    border: 2px solid var(--green);
+    padding: 32px;
+    margin: 32px 0;
+    box-shadow: 0 0 30px var(--green-glow);
+    position: relative;
+  }
+
+  .demo-title {
+    font-family: 'VT323', monospace;
+    font-size: 28px;
+    color: var(--amber);
+    text-align: center;
+    margin-bottom: 24px;
+    text-shadow: 0 0 10px rgba(255,176,0,0.5);
+  }
+
+  .demo-controls {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+  }
+
+  .branch-btn {
+    background: transparent;
+    border: 2px solid var(--green);
+    color: var(--green);
+    padding: 10px 20px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-transform: lowercase;
+    letter-spacing: 1px;
+  }
+
+  .branch-btn:hover {
+    background: var(--green);
+    color: var(--bg-deep);
+    box-shadow: 0 0 20px var(--green-glow);
+    transform: translateY(-2px);
+  }
+
+  .branch-btn.active {
+    background: var(--green);
+    color: var(--bg-deep);
+    box-shadow: 0 0 15px var(--green-glow);
+  }
+
+  .branch-btn.feature { border-color: var(--cyan); color: var(--cyan); }
+  .branch-btn.feature:hover, .branch-btn.feature.active { background: var(--cyan); color: var(--bg-deep); }
+
+  .branch-btn.hotfix { border-color: var(--red); color: var(--red); }
+  .branch-btn.hotfix:hover, .branch-btn.hotfix.active { background: var(--red); color: var(--bg-deep); }
+
+  .working-dir {
+    background: var(--bg-deep);
+    border: 1px dashed var(--green-dim);
+    padding: 20px;
+    min-height: 240px;
+    position: relative;
+  }
+
+  .working-dir-label {
+    position: absolute;
+    top: -10px;
+    left: 16px;
+    background: var(--paper);
+    padding: 0 8px;
+    font-size: 11px;
+    color: var(--green-dim);
+    letter-spacing: 2px;
+  }
+
+  .files {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 12px;
+    margin-top: 8px;
+  }
+
+  .file {
+    border: 1px solid var(--green);
+    background: rgba(0,255,102,0.05);
+    padding: 10px 12px;
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.4s cubic-bezier(.5,0,.3,1);
+    animation: file-appear 0.4s backwards;
+  }
+
+  .file.new {
+    border-color: var(--amber);
+    color: var(--amber);
+    background: rgba(255,176,0,0.08);
+  }
+
+  @keyframes file-appear {
+    from {
+      opacity: 0;
+      transform: translateY(8px) scale(0.9);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+
+  .file-icon {
+    font-size: 14px;
+  }
+
+  .head-pointer {
+    background: rgba(255,176,0,0.1);
+    border: 1px solid var(--amber);
+    padding: 12px 16px;
+    margin-bottom: 16px;
+    font-size: 13px;
+    color: var(--amber);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .head-label {
+    background: var(--amber);
+    color: var(--bg-deep);
+    padding: 2px 8px;
+    font-weight: 700;
+    font-size: 11px;
+    letter-spacing: 1px;
+  }
+
+  .arrow {
+    color: var(--amber);
+    font-weight: 700;
+  }
+
+  /* Three-tree diagram */
+  .three-trees {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    margin: 24px 0;
+  }
+
+  @media (max-width: 700px) {
+    .three-trees { grid-template-columns: 1fr; }
+  }
+
+  .tree {
+    border: 2px solid var(--green-dim);
+    padding: 16px;
+    background: var(--paper);
+    position: relative;
+  }
+
+  .tree-name {
+    font-family: 'VT323', monospace;
+    font-size: 22px;
+    color: var(--amber);
+    margin-bottom: 4px;
+  }
+
+  .tree-desc {
+    font-size: 11px;
+    color: var(--green-dim);
+    margin-bottom: 12px;
+    line-height: 1.4;
+  }
+
+  .tree-status {
+    font-size: 11px;
+    padding: 4px 8px;
+    border: 1px solid currentColor;
+    display: inline-block;
+  }
+
+  .status-changing { color: var(--red); }
+  .status-staging { color: var(--amber); }
+  .status-safe { color: var(--cyan); }
+
+  /* Warning / dirty state callout */
+  .warning {
+    border: 2px solid var(--red);
+    background: rgba(255,51,68,0.05);
+    padding: 20px;
+    margin: 24px 0;
+    position: relative;
+    box-shadow: 0 0 20px rgba(255,51,68,0.2);
+  }
+
+  .warning-label {
+    position: absolute;
+    top: -10px;
+    left: 16px;
+    background: var(--bg-deep);
+    color: var(--red);
+    padding: 0 8px;
+    font-size: 11px;
+    letter-spacing: 2px;
+    font-weight: 700;
+  }
+
+  .warning p {
+    color: #ffaabb;
+    font-size: 13px;
+  }
+
+  /* Footer */
+  .footer {
+    margin-top: 64px;
+    padding-top: 24px;
+    border-top: 1px dashed var(--green-dim);
+    text-align: center;
+    color: var(--green-dim);
+    font-size: 11px;
+    letter-spacing: 2px;
+  }
+
+  /* Inline code */
+  code {
+    background: rgba(0,255,102,0.1);
+    border: 1px solid var(--border);
+    padding: 1px 6px;
+    color: var(--amber);
+    font-size: 0.9em;
+  }
+
+  .ascii {
+    color: var(--green-dim);
+    font-size: 11px;
+    line-height: 1.2;
+    white-space: pre;
+    overflow-x: auto;
+  }
+
+  .key-takeaway {
+    background: linear-gradient(135deg, rgba(0,255,102,0.08), rgba(0,221,255,0.05));
+    border-left: 4px solid var(--cyan);
+    padding: 20px 24px;
+    margin: 24px 0;
+  }
+
+  .key-takeaway .label {
+    color: var(--cyan);
+    font-size: 11px;
+    letter-spacing: 3px;
+    margin-bottom: 8px;
+  }
+
+  .key-takeaway p {
+    color: #cce8ff;
+    font-size: 14px;
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+
+  <!-- HEADER -->
+  <header class="header">
+    <div class="prompt">
+      <span class="user">tim@lowenstein</span>:<span class="path">~/repos/fathom</span>$ ./explain-checkout.sh<span class="cursor"></span>
+    </div>
+    <h1>WHAT HAPPENS<br>WHEN YOU SWITCH<br>BRANCHES?</h1>
+    <div class="subtitle">// A guided tour through the bowels of git checkout</div>
+    <div class="subtitle" style="color: var(--amber);">// running on local machine ... press scroll to begin</div>
+  </header>
+
+  <!-- THE MENTAL MODEL -->
+  <section class="step">
+    <div class="step-num">0</div>
+    <h2>FIRST: THE THREE TREES</h2>
+    <div class="tagline">// before we can talk about switching, you need to know what's in play</div>
+
+    <p>Git doesn't have one "current state" — it has <span class="highlight">three</span>. Switching branches touches all of them in specific ways. Meet the cast:</p>
+
+    <div class="three-trees">
+      <div class="tree">
+        <div class="tree-name">[ HEAD ]</div>
+        <div class="tree-desc">A pointer to the commit you're "on." Stored in <code>.git/HEAD</code>.</div>
+        <div class="tree-status status-changing">CHANGES</div>
+      </div>
+      <div class="tree">
+        <div class="tree-name">[ INDEX ]</div>
+        <div class="tree-desc">aka the "staging area." A snapshot of what your next commit will look like. Lives in <code>.git/index</code>.</div>
+        <div class="tree-status status-staging">CHANGES</div>
+      </div>
+      <div class="tree">
+        <div class="tree-name">[ WORKING DIR ]</div>
+        <div class="tree-desc">The actual files on disk that you can see, edit, build, and run.</div>
+        <div class="tree-status status-changing">CHANGES</div>
+      </div>
+    </div>
+
+    <div class="key-takeaway">
+      <div class="label">KEY INSIGHT</div>
+      <p>When you switch branches, <span style="color: var(--amber);">all three trees get updated</span> to match the target branch. The HEAD pointer moves, the index is rewritten, and the files in your folder are physically replaced.</p>
+    </div>
+  </section>
+
+  <!-- STEP 1: VALIDATION -->
+  <section class="step">
+    <div class="step-num">1</div>
+    <h2>VALIDATION & SAFETY CHECK</h2>
+    <div class="tagline">// git asks: can I even do this without destroying your work?</div>
+
+    <p>You type <code>git switch feature-x</code> (or the older <code>git checkout feature-x</code>). Before doing anything destructive, git scans your working directory and index for changes.</p>
+
+    <div class="diagram" data-label="STEP 1">
+<span style="color: var(--green-dim);">→</span> Resolve "feature-x" to a commit SHA (e.g., <span style="color: var(--amber);">a3f9c21...</span>)
+<span style="color: var(--green-dim);">→</span> Diff your working dir against <span style="color: var(--cyan);">current HEAD</span>
+<span style="color: var(--green-dim);">→</span> Diff target commit against <span style="color: var(--cyan);">current HEAD</span>
+<span style="color: var(--green-dim);">→</span> Would switching <span style="color: var(--red);">overwrite uncommitted changes</span>?
+    </div>
+
+    <div class="warning">
+      <div class="warning-label">⚠ DIRTY STATE</div>
+      <p>If you have uncommitted changes to a file that <em>differs</em> between branches, git will refuse and yell at you: <code>error: Your local changes would be overwritten</code>. Your options: commit, stash, or discard. Git won't silently nuke your work.</p>
+      <p style="margin-top: 8px;">If your changes are to files that <em>don't</em> differ between branches, git happily carries them along.</p>
+    </div>
+  </section>
+
+  <!-- STEP 2: MOVE HEAD -->
+  <section class="step">
+    <div class="step-num">2</div>
+    <h2>MOVE THE HEAD POINTER</h2>
+    <div class="tagline">// the smallest, fastest part of the whole operation</div>
+
+    <p>Git rewrites a single file: <code>.git/HEAD</code>. That's it. One line of text.</p>
+
+    <div class="diagram" data-label="BEFORE">
+<span style="color: var(--green-dim);">$ cat .git/HEAD</span>
+ref: refs/heads/<span style="color: var(--cyan);">main</span></div>
+
+    <div class="diagram" data-label="AFTER">
+<span style="color: var(--green-dim);">$ cat .git/HEAD</span>
+ref: refs/heads/<span style="color: var(--amber);">feature-x</span></div>
+
+    <p style="margin-top: 12px;">That's the entirety of "switching branches" from git's bookkeeping perspective. The rest of this guide is about <span class="highlight">syncing the index and your files to match where HEAD now points</span>.</p>
+  </section>
+
+  <!-- STEP 3: REBUILD INDEX -->
+  <section class="step">
+    <div class="step-num">3</div>
+    <h2>REWRITE THE INDEX</h2>
+    <div class="tagline">// the staging area becomes a snapshot of the new branch's tip</div>
+
+    <p>Git reads the tree object pointed to by the new commit and writes it into <code>.git/index</code> — a binary file listing every tracked file in the repo with its mode, hash, and metadata.</p>
+
+    <div class="ascii">
+  ┌─────────────────────────┐         ┌─────────────────────────┐
+  │   .git/index (before)   │   →     │   .git/index (after)    │
+  │  ───────────────────    │         │  ───────────────────    │
+  │  src/App.cs    @ab12... │         │  src/App.cs    @ff09... │
+  │  README.md     @cd34... │         │  README.md     @cd34... │
+  │  config.json   @ef56... │         │  config.json   @ef56... │
+  │                         │         │  src/NewFeat.cs @99aa.. │
+  └─────────────────────────┘         └─────────────────────────┘
+       (matches main)                    (matches feature-x)
+    </div>
+  </section>
+
+  <!-- STEP 4: UPDATE FILES -->
+  <section class="step">
+    <div class="step-num">4</div>
+    <h2>UPDATE THE FILES ON DISK</h2>
+    <div class="tagline">// the part you actually notice</div>
+
+    <p>Git walks the difference between the old tree and the new tree, then <span class="highlight">physically rewrites your working directory</span>. This isn't magic — it's literal file I/O happening on your SSD.</p>
+
+    <div class="diagram" data-label="STEP 4">
+For each file that differs between branches:
+  <span style="color: var(--green-dim);">→</span> Files <span style="color: var(--cyan);">only on old branch</span> ........ <span style="color: var(--red);">DELETED</span>
+  <span style="color: var(--green-dim);">→</span> Files <span style="color: var(--amber);">only on new branch</span> ........ <span style="color: var(--green);">CREATED</span>
+  <span style="color: var(--green-dim);">→</span> Files with <span style="color: var(--magenta);">different content</span> ...... <span style="color: var(--amber);">REWRITTEN</span>
+  <span style="color: var(--green-dim);">→</span> Identical files ......................... <span style="color: var(--cyan);">UNTOUCHED</span>
+    </div>
+
+    <p>This is why your <code>bin/</code> and <code>obj/</code> folders survive a branch switch (they're gitignored), but your <code>Controllers/FathomController.cs</code> can suddenly have totally different contents the moment the command returns.</p>
+  </section>
+
+  <!-- LIVE DEMO -->
+  <div class="demo-zone">
+    <div class="demo-title">▶ LIVE DEMO: SWITCH A BRANCH ◀</div>
+    <p style="text-align: center; color: var(--green-dim); font-size: 12px; margin-bottom: 8px;">click a branch button below to see your working directory transform</p>
+
+    <div class="demo-controls">
+      <button class="branch-btn active" data-branch="main">main</button>
+      <button class="branch-btn feature" data-branch="feature">feature/rag-search</button>
+      <button class="branch-btn hotfix" data-branch="hotfix">hotfix/auth-bug</button>
+    </div>
+
+    <div class="head-pointer">
+      <span class="head-label">HEAD</span>
+      <span class="arrow">→</span>
+      <span id="head-target">refs/heads/main</span>
+      <span style="margin-left: auto; color: var(--green-dim); font-size: 11px;" id="commit-sha">@ a3f9c21</span>
+    </div>
+
+    <div class="working-dir">
+      <div class="working-dir-label">~/repos/fathom/</div>
+      <div class="files" id="file-list"></div>
+    </div>
+
+    <div style="margin-top: 16px; font-size: 11px; color: var(--green-dim); text-align: center;">
+      <span style="color: var(--green);">■</span> tracked unchanged  ·
+      <span style="color: var(--amber);">■</span> new on this branch
+    </div>
+  </div>
+
+  <!-- STEP 5: WHAT DOESN'T CHANGE -->
+  <section class="step">
+    <div class="step-num">5</div>
+    <h2>WHAT DOESN'T CHANGE</h2>
+    <div class="tagline">// the surprisingly long list of things git leaves alone</div>
+
+    <p>The illusion is that you "teleport" to another branch. The reality is far more mundane:</p>
+
+    <div class="diagram" data-label="UNTOUCHED">
+<span style="color: var(--green);">✓</span> Files in your <code>.gitignore</code> (build artifacts, node_modules, .env)
+<span style="color: var(--green);">✓</span> Untracked files git has never seen
+<span style="color: var(--green);">✓</span> Files identical between the two branches
+<span style="color: var(--green);">✓</span> Your editor's open tabs, breakpoints, terminals
+<span style="color: var(--green);">✓</span> Your shell's environment variables and cwd
+<span style="color: var(--green);">✓</span> Running processes, dev servers, debuggers
+    </div>
+
+    <div class="warning" style="border-color: var(--amber); box-shadow: 0 0 20px rgba(255,176,0,0.2);">
+      <div class="warning-label" style="color: var(--amber);">⚡ THE GOTCHA</div>
+      <p style="color: #ffe0aa;">Your <span style="color: var(--amber);">dev server is still running</span> with the old code in memory. Your IDE has the <span style="color: var(--amber);">old class definitions cached</span>. The files on disk are new — but everything <em>derived</em> from those files (compiled assemblies, hot-reload state, IntelliSense indexes) is stale until rebuilt.</p>
+    </div>
+  </section>
+
+  <!-- THE MENTAL MODEL FINALE -->
+  <section class="step">
+    <div class="step-num">∎</div>
+    <h2>SO. WHAT IS A BRANCH SWITCH, REALLY?</h2>
+    <div class="tagline">// putting it all together</div>
+
+    <div class="key-takeaway">
+      <div class="label">TL;DR</div>
+      <p>Git rewrites <code>.git/HEAD</code> to point at a new branch. Then it rewrites <code>.git/index</code> to match that branch's commit. Then it walks your working directory and creates, deletes, and overwrites files until they match too. The whole thing usually finishes in milliseconds, and your editor often catches up before you do.</p>
+    </div>
+
+    <p style="margin-top: 24px;">Now — remember that worktree thing from earlier? <span class="highlight">All of the above happens in your one working directory.</span> A worktree gives you a <em>second</em> set of "HEAD + index + working directory" backed by the same <code>.git/objects/</code> database. That's why you can have two branches checked out at once: two HEADs, two indexes, two folders, one shared object store.</p>
+  </section>
+
+  <footer class="footer">
+    <div>END OF TRANSMISSION</div>
+    <div style="margin-top: 8px;">— made with phosphor and love —</div>
+  </footer>
+
+</div>
+
+<script>
+  // Branch data — each branch has a different set of files
+  const branches = {
+    main: {
+      ref: 'refs/heads/main',
+      sha: '@ a3f9c21',
+      files: [
+        { name: 'README.md', icon: '📄' },
+        { name: 'Program.cs', icon: '⚙' },
+        { name: 'appsettings.json', icon: '⚙' },
+        { name: 'Controllers/', icon: '📁' },
+        { name: 'Models/', icon: '📁' },
+        { name: 'Views/', icon: '📁' },
+      ]
+    },
+    feature: {
+      ref: 'refs/heads/feature/rag-search',
+      sha: '@ 7b2e4f8',
+      files: [
+        { name: 'README.md', icon: '📄' },
+        { name: 'Program.cs', icon: '⚙' },
+        { name: 'appsettings.json', icon: '⚙' },
+        { name: 'Controllers/', icon: '📁' },
+        { name: 'Models/', icon: '📁' },
+        { name: 'Views/', icon: '📁' },
+        { name: 'Services/RagService.cs', icon: '✨', new: true },
+        { name: 'Services/AzureSearch.cs', icon: '✨', new: true },
+        { name: 'Models/Embedding.cs', icon: '✨', new: true },
+      ]
+    },
+    hotfix: {
+      ref: 'refs/heads/hotfix/auth-bug',
+      sha: '@ e91d033',
+      files: [
+        { name: 'README.md', icon: '📄' },
+        { name: 'Program.cs', icon: '⚙' },
+        { name: 'appsettings.json', icon: '⚙' },
+        { name: 'Controllers/', icon: '📁' },
+        { name: 'Models/', icon: '📁' },
+        { name: 'Views/', icon: '📁' },
+        { name: 'Auth/EntraHandler.cs', icon: '🔧', new: true },
+      ]
+    }
+  };
+
+  const fileList = document.getElementById('file-list');
+  const headTarget = document.getElementById('head-target');
+  const commitSha = document.getElementById('commit-sha');
+  const buttons = document.querySelectorAll('.branch-btn');
+
+  function renderBranch(name) {
+    const branch = branches[name];
+    headTarget.textContent = branch.ref;
+    commitSha.textContent = branch.sha;
+
+    // Clear and re-render with staggered animation
+    fileList.innerHTML = '';
+    branch.files.forEach((f, i) => {
+      const div = document.createElement('div');
+      div.className = 'file' + (f.new ? ' new' : '');
+      div.style.animationDelay = (i * 40) + 'ms';
+      div.innerHTML = `<span class="file-icon">${f.icon}</span><span>${f.name}</span>`;
+      fileList.appendChild(div);
+    });
+
+    buttons.forEach(b => b.classList.toggle('active', b.dataset.branch === name));
+  }
+
+  buttons.forEach(btn => {
+    btn.addEventListener('click', () => renderBranch(btn.dataset.branch));
+  });
+
+  // initial
+  renderBranch('main');
+</script>
+
+</body>
+</html>
