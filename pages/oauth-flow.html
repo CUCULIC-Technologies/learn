@@ -1,0 +1,1170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>iManage OAuth2 + PKCE — Fathom Flow Documentation</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto+Condensed:wght@300;400;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --red: #EB0028;
+      --red-soft: rgba(235, 0, 40, 0.08);
+      --red-hover: #c8001f;
+      --black: #1a1a1a;
+      --white: #ffffff;
+      --gray-rule: #d8d8d8;
+      --gray-light: #f4f4f4;
+      --gray-mid: #e8e8e8;
+      --gray-body: #575757;
+      --gray-soft: #999;
+
+      /* Actor colors */
+      --user: #0083C1;          /* blue */
+      --user-soft: #E3F2FD;
+      --browser: #604775;       /* purple */
+      --browser-soft: #EDE7F6;
+      --fathom: #EB0028;        /* red — brand */
+      --fathom-soft: #FFE5EA;
+      --imanage: #38858B;       /* teal */
+      --imanage-soft: #E0F2F4;
+
+      --font: 'Roboto Condensed', 'Arial Narrow', Arial, sans-serif;
+      --mono: 'JetBrains Mono', 'Consolas', 'Monaco', monospace;
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      font-family: var(--font);
+      background: var(--gray-light);
+      color: var(--black);
+      line-height: 1.5;
+    }
+
+    /* ============================== HERO ============================== */
+    .hero {
+      background: var(--black);
+      color: var(--white);
+      padding: 60px 32px 80px;
+      position: relative;
+      overflow: hidden;
+    }
+    .hero::after {
+      content: '';
+      position: absolute;
+      top: 0; right: 0;
+      width: 40%;
+      height: 100%;
+      background: var(--red);
+      clip-path: polygon(30% 0, 100% 0, 100% 100%, 0% 100%);
+      opacity: 0.12;
+      pointer-events: none;
+    }
+    .hero-inner {
+      max-width: 1100px;
+      margin: 0 auto;
+      position: relative;
+      z-index: 1;
+    }
+    .hero .eyebrow {
+      font-size: 12px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--red);
+      font-weight: 700;
+      margin-bottom: 12px;
+    }
+    .hero h1 {
+      font-size: clamp(36px, 5vw, 56px);
+      font-weight: 700;
+      margin: 0 0 12px;
+      letter-spacing: -0.01em;
+      line-height: 1.05;
+    }
+    .hero h1 .plus {
+      color: var(--red);
+      display: inline-block;
+      transform: scale(1.2);
+      margin: 0 8px;
+    }
+    .hero .lead {
+      font-size: 18px;
+      color: rgba(255, 255, 255, 0.85);
+      max-width: 640px;
+      margin: 0 0 20px;
+    }
+    .hero .tagline {
+      display: inline-block;
+      font-size: 11px;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--white);
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      padding: 6px 14px;
+      border-radius: 999px;
+    }
+
+    /* ============================== PAGE LAYOUT ============================== */
+    .page {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 48px 32px 80px;
+    }
+    section { margin-bottom: 60px; }
+
+    h2 {
+      font-size: 24px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin: 0 0 24px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--gray-rule);
+      position: relative;
+    }
+    h2::after {
+      content: '';
+      position: absolute;
+      left: 0; bottom: -1px;
+      width: 60px;
+      height: 4px;
+      background: var(--red);
+    }
+
+    /* ============================== CAST ============================== */
+    .cast {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 14px;
+    }
+    @media (max-width: 700px) { .cast { grid-template-columns: repeat(2, 1fr); } }
+
+    .actor {
+      background: var(--white);
+      border: 2px solid var(--gray-rule);
+      border-radius: 10px;
+      padding: 16px;
+      text-align: center;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .actor:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(0,0,0,0.08);
+    }
+    .actor .icon { font-size: 32px; line-height: 1; margin-bottom: 6px; }
+    .actor .name {
+      font-weight: 700;
+      font-size: 14px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin: 0 0 4px;
+    }
+    .actor .role {
+      font-size: 12px;
+      color: var(--gray-body);
+    }
+    .actor.user    { border-color: var(--user); }
+    .actor.user .name    { color: var(--user); }
+    .actor.browser { border-color: var(--browser); }
+    .actor.browser .name { color: var(--browser); }
+    .actor.fathom  { border-color: var(--fathom); }
+    .actor.fathom .name  { color: var(--fathom); }
+    .actor.imanage { border-color: var(--imanage); }
+    .actor.imanage .name { color: var(--imanage); }
+
+    /* ============================== SEQUENCE DIAGRAM ============================== */
+    .diagram-wrapper {
+      background: var(--white);
+      border: 1px solid var(--gray-rule);
+      border-radius: 12px;
+      padding: 24px;
+      overflow-x: auto;
+    }
+    .diagram-wrapper svg {
+      display: block;
+      width: 100%;
+      max-width: 100%;
+      height: auto;
+    }
+
+    /* ============================== STEP CARDS ============================== */
+    .steps {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+    .step {
+      display: grid;
+      grid-template-columns: 80px 1fr;
+      gap: 24px;
+      align-items: stretch;
+    }
+    @media (max-width: 700px) {
+      .step { grid-template-columns: 60px 1fr; gap: 14px; }
+    }
+    .step-number {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      background: var(--red);
+      color: var(--white);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 32px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      box-shadow: 0 4px 12px rgba(235, 0, 40, 0.25);
+      position: sticky;
+      top: 20px;
+      align-self: flex-start;
+    }
+    @media (max-width: 700px) {
+      .step-number { width: 60px; height: 60px; font-size: 24px; }
+    }
+    .step-card {
+      background: var(--white);
+      border: 1px solid var(--gray-rule);
+      border-radius: 10px;
+      padding: 20px 24px;
+      transition: box-shadow 0.2s;
+    }
+    .step-card:hover { box-shadow: 0 6px 18px rgba(0,0,0,0.06); }
+    .step-card .actors {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 10px;
+      flex-wrap: wrap;
+    }
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: 3px 10px;
+      border-radius: 999px;
+      border: 1.5px solid;
+    }
+    .pill.user    { color: var(--user);    border-color: var(--user);    background: var(--user-soft); }
+    .pill.browser { color: var(--browser); border-color: var(--browser); background: var(--browser-soft); }
+    .pill.fathom  { color: var(--fathom);  border-color: var(--fathom);  background: var(--fathom-soft); }
+    .pill.imanage { color: var(--imanage); border-color: var(--imanage); background: var(--imanage-soft); }
+    .arrow {
+      color: var(--gray-soft);
+      font-weight: 700;
+      font-size: 14px;
+    }
+    .step-card h3 {
+      margin: 0 0 10px;
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: 0.01em;
+    }
+    .step-card p {
+      margin: 0 0 14px;
+      color: var(--gray-body);
+      font-size: 15px;
+    }
+    .step-card .narrative em {
+      color: var(--black);
+      font-style: normal;
+      font-weight: 700;
+    }
+
+    /* Technical detail box */
+    .tech {
+      background: var(--gray-light);
+      border-left: 3px solid var(--gray-rule);
+      border-radius: 4px;
+      padding: 12px 16px;
+      margin-top: 14px;
+      font-family: var(--mono);
+      font-size: 12.5px;
+      line-height: 1.6;
+      overflow-x: auto;
+    }
+    .tech .label {
+      display: inline-block;
+      font-family: var(--font);
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--gray-soft);
+      margin-bottom: 6px;
+    }
+    .tech .method-get    { color: #0083C1; font-weight: 700; }
+    .tech .method-post   { color: #2E7D32; font-weight: 700; }
+    .tech .method-302    { color: #604775; font-weight: 700; }
+    .tech .method-200    { color: #2E7D32; font-weight: 700; }
+    .tech .method-401    { color: #B91C1C; font-weight: 700; }
+    .tech .key { color: #B91C1C; }
+    .tech .str { color: var(--imanage); }
+    .tech .comment {
+      color: var(--gray-soft);
+      font-style: italic;
+    }
+
+    /* Why-callout box */
+    .why {
+      background: #FFF8E1;
+      border-left: 4px solid #F9A825;
+      border-radius: 4px;
+      padding: 12px 16px;
+      margin-top: 14px;
+      font-size: 13.5px;
+      color: #5D4037;
+    }
+    .why strong {
+      color: #BF360C;
+      display: block;
+      font-size: 11px;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      margin-bottom: 4px;
+    }
+
+    /* File reference */
+    .ref {
+      display: inline-block;
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--gray-body);
+      background: var(--gray-mid);
+      padding: 2px 8px;
+      border-radius: 4px;
+      margin-right: 6px;
+    }
+
+    /* ============================== PKCE EXPLAINER ============================== */
+    .pkce {
+      background: linear-gradient(135deg, var(--red) 0%, var(--red-hover) 100%);
+      color: var(--white);
+      border-radius: 12px;
+      padding: 32px;
+      position: relative;
+      overflow: hidden;
+    }
+    .pkce::after {
+      content: '🔒';
+      position: absolute;
+      right: -10px;
+      bottom: -30px;
+      font-size: 200px;
+      opacity: 0.08;
+    }
+    .pkce h3 {
+      margin: 0 0 12px;
+      font-size: 28px;
+      letter-spacing: -0.01em;
+    }
+    .pkce .pkce-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      margin-top: 20px;
+    }
+    @media (max-width: 700px) { .pkce .pkce-grid { grid-template-columns: 1fr; } }
+    .pkce-box {
+      background: rgba(255, 255, 255, 0.12);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 8px;
+      padding: 16px;
+      backdrop-filter: blur(8px);
+    }
+    .pkce-box .label {
+      font-size: 11px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      opacity: 0.8;
+      margin-bottom: 8px;
+    }
+    .pkce-box code {
+      font-family: var(--mono);
+      font-size: 13px;
+      word-break: break-all;
+    }
+
+    /* ============================== TOKEN REFRESH ============================== */
+    .refresh-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+    }
+    @media (max-width: 700px) { .refresh-grid { grid-template-columns: 1fr; } }
+    .refresh-card {
+      background: var(--white);
+      border: 1px solid var(--gray-rule);
+      border-left: 4px solid var(--imanage);
+      border-radius: 6px;
+      padding: 16px;
+    }
+    .refresh-card h4 {
+      margin: 0 0 8px;
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: var(--imanage);
+    }
+    .refresh-card p {
+      margin: 0;
+      font-size: 14px;
+      color: var(--gray-body);
+    }
+
+    /* ============================== STORAGE DIAGRAM ============================== */
+    .storage {
+      background: var(--white);
+      border: 1px solid var(--gray-rule);
+      border-radius: 10px;
+      padding: 24px;
+    }
+    .storage-table {
+      display: grid;
+      grid-template-columns: 200px 1fr 1fr 1fr;
+      gap: 0;
+      border: 1px solid var(--gray-rule);
+      border-radius: 6px;
+      overflow: hidden;
+      font-size: 13px;
+    }
+    @media (max-width: 700px) {
+      .storage-table { grid-template-columns: 1fr; }
+      .storage-table > div { border-bottom: 1px solid var(--gray-rule); }
+    }
+    .storage-table > div {
+      padding: 12px 16px;
+      border-right: 1px solid var(--gray-rule);
+    }
+    .storage-table > div:nth-child(4n) { border-right: none; }
+    .storage-table .head {
+      background: var(--black);
+      color: var(--white);
+      font-size: 11px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      font-weight: 700;
+    }
+    .storage-table code {
+      font-family: var(--mono);
+      font-size: 12px;
+      color: var(--imanage);
+    }
+    .storage-table .encrypted::before {
+      content: '🔒 ';
+    }
+
+    /* ============================== GLOSSARY ============================== */
+    .glossary {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 14px;
+    }
+    @media (max-width: 700px) { .glossary { grid-template-columns: 1fr; } }
+    .term {
+      background: var(--white);
+      border: 1px solid var(--gray-rule);
+      border-radius: 6px;
+      padding: 14px 18px;
+    }
+    .term dt {
+      font-weight: 700;
+      font-size: 13px;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: var(--red);
+      margin-bottom: 4px;
+    }
+    .term dd {
+      margin: 0;
+      font-size: 13.5px;
+      color: var(--gray-body);
+    }
+
+    /* ============================== FOOTER ============================== */
+    footer {
+      margin-top: 60px;
+      padding: 30px 0;
+      border-top: 1px solid var(--gray-rule);
+      font-size: 12px;
+      color: var(--gray-soft);
+      text-align: center;
+    }
+    footer code {
+      font-family: var(--mono);
+      color: var(--gray-body);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ========================= HERO ========================= -->
+  <header class="hero">
+    <div class="hero-inner">
+      <div class="eyebrow">Fathom · Authentication</div>
+      <h1>iManage OAuth2 <span class="plus">+</span> PKCE</h1>
+      <p class="lead">
+        How Fathom hands a signed-in user off to iManage Cloud and gets back a
+        per-user access token — without ever seeing their password.
+      </p>
+      <span class="tagline">A 10-step cryptographic handshake</span>
+    </div>
+  </header>
+
+  <main class="page">
+
+    <!-- ========================= CAST ========================= -->
+    <section>
+      <h2>The Cast</h2>
+      <div class="cast">
+        <div class="actor user">
+          <div class="icon">👤</div>
+          <div class="name">User</div>
+          <div class="role">The signed-in Lowenstein attorney</div>
+        </div>
+        <div class="actor browser">
+          <div class="icon">🌐</div>
+          <div class="name">Browser</div>
+          <div class="role">Carries cookies and follows redirects</div>
+        </div>
+        <div class="actor fathom">
+          <div class="icon">⛵</div>
+          <div class="name">Fathom</div>
+          <div class="role">Web app — orchestrates the handshake</div>
+        </div>
+        <div class="actor imanage">
+          <div class="icon">📚</div>
+          <div class="name">iManage</div>
+          <div class="role">Cloud DMS — owns the user's identity</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========================= SEQUENCE DIAGRAM ========================= -->
+    <section>
+      <h2>The Handshake at a Glance</h2>
+      <div class="diagram-wrapper">
+        <svg viewBox="0 0 900 760" preserveAspectRatio="xMidYMin meet" xmlns="http://www.w3.org/2000/svg">
+          <!-- Lane headers -->
+          <g font-family="Roboto Condensed, Arial, sans-serif" font-weight="700" font-size="13" text-anchor="middle">
+            <rect x="40"  y="20" width="120" height="32" rx="6" fill="#E3F2FD" stroke="#0083C1" stroke-width="2"/>
+            <text x="100" y="41" fill="#0083C1">👤 USER</text>
+
+            <rect x="280" y="20" width="120" height="32" rx="6" fill="#EDE7F6" stroke="#604775" stroke-width="2"/>
+            <text x="340" y="41" fill="#604775">🌐 BROWSER</text>
+
+            <rect x="520" y="20" width="120" height="32" rx="6" fill="#FFE5EA" stroke="#EB0028" stroke-width="2"/>
+            <text x="580" y="41" fill="#EB0028">⛵ FATHOM</text>
+
+            <rect x="740" y="20" width="120" height="32" rx="6" fill="#E0F2F4" stroke="#38858B" stroke-width="2"/>
+            <text x="800" y="41" fill="#38858B">📚 iMANAGE</text>
+          </g>
+
+          <!-- Lane vertical lines -->
+          <g stroke="#d8d8d8" stroke-width="1" stroke-dasharray="4 4">
+            <line x1="100" y1="60" x2="100" y2="720"/>
+            <line x1="340" y1="60" x2="340" y2="720"/>
+            <line x1="580" y1="60" x2="580" y2="720"/>
+            <line x1="800" y1="60" x2="800" y2="720"/>
+          </g>
+
+          <!-- Arrow marker definitions -->
+          <defs>
+            <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto">
+              <path d="M0,0 L0,6 L8,3 z" fill="#1a1a1a"/>
+            </marker>
+            <marker id="arrow-red" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto">
+              <path d="M0,0 L0,6 L8,3 z" fill="#EB0028"/>
+            </marker>
+          </defs>
+
+          <!-- Step circles helper style -->
+          <g font-family="Roboto Condensed, Arial, sans-serif" font-size="11" font-weight="700">
+
+            <!-- 1: User → Browser : click Connect -->
+            <line x1="100" y1="100" x2="335" y2="100" stroke="#1a1a1a" stroke-width="1.5" marker-end="url(#arrow)"/>
+            <circle cx="100" cy="100" r="12" fill="#EB0028"/>
+            <text x="100" y="104" text-anchor="middle" fill="white">1</text>
+            <text x="220" y="92" text-anchor="middle" fill="#575757" font-size="12">Click "Connect iManage"</text>
+
+            <!-- 2: Browser → Fathom : GET /imanage/connect -->
+            <line x1="340" y1="140" x2="575" y2="140" stroke="#1a1a1a" stroke-width="1.5" marker-end="url(#arrow)"/>
+            <circle cx="340" cy="140" r="12" fill="#EB0028"/>
+            <text x="340" y="144" text-anchor="middle" fill="white">2</text>
+            <text x="458" y="132" text-anchor="middle" fill="#575757" font-size="12">GET /imanage/connect</text>
+
+            <!-- 3: Fathom self-action: generate PKCE verifier + state -->
+            <path d="M 580 175 Q 640 175 640 195 Q 640 215 580 215" fill="none" stroke="#EB0028" stroke-width="1.5" marker-end="url(#arrow-red)"/>
+            <circle cx="580" cy="180" r="12" fill="#EB0028"/>
+            <text x="580" y="184" text-anchor="middle" fill="white">3</text>
+            <text x="670" y="200" text-anchor="start" fill="#EB0028" font-size="11" font-weight="700">Generate PKCE verifier,</text>
+            <text x="670" y="214" text-anchor="start" fill="#EB0028" font-size="11" font-weight="700">SHA-256 challenge, CSRF state</text>
+
+            <!-- 4: Fathom → Browser : 302 to iManage authorize -->
+            <line x1="580" y1="250" x2="345" y2="250" stroke="#1a1a1a" stroke-width="1.5" marker-end="url(#arrow)"/>
+            <circle cx="580" cy="250" r="12" fill="#EB0028"/>
+            <text x="580" y="254" text-anchor="middle" fill="white">4</text>
+            <text x="462" y="242" text-anchor="middle" fill="#604775" font-size="12">302 → iManage authorize URL</text>
+
+            <!-- 5: Browser → iManage : GET /auth/oauth2/authorize -->
+            <line x1="340" y1="290" x2="795" y2="290" stroke="#1a1a1a" stroke-width="1.5" marker-end="url(#arrow)"/>
+            <circle cx="340" cy="290" r="12" fill="#EB0028"/>
+            <text x="340" y="294" text-anchor="middle" fill="white">5</text>
+            <text x="570" y="282" text-anchor="middle" fill="#575757" font-size="12">GET /auth/oauth2/authorize?code_challenge=…</text>
+
+            <!-- 6: iManage shows login → user authenticates -->
+            <line x1="800" y1="335" x2="105" y2="335" stroke="#38858B" stroke-width="1.5" stroke-dasharray="6 3" marker-end="url(#arrow)"/>
+            <circle cx="800" cy="335" r="12" fill="#EB0028"/>
+            <text x="800" y="339" text-anchor="middle" fill="white">6</text>
+            <text x="450" y="327" text-anchor="middle" fill="#38858B" font-size="12">Show login form (username / SSO / MFA)</text>
+
+            <line x1="100" y1="370" x2="795" y2="370" stroke="#1a1a1a" stroke-width="1.5" marker-end="url(#arrow)"/>
+            <text x="450" y="362" text-anchor="middle" fill="#575757" font-size="12">User submits credentials</text>
+
+            <!-- 7: iManage → Browser : 302 callback with code -->
+            <line x1="800" y1="410" x2="345" y2="410" stroke="#1a1a1a" stroke-width="1.5" marker-end="url(#arrow)"/>
+            <circle cx="800" cy="410" r="12" fill="#EB0028"/>
+            <text x="800" y="414" text-anchor="middle" fill="white">7</text>
+            <text x="570" y="402" text-anchor="middle" fill="#604775" font-size="12">302 → /imanage/connect/callback?code=…</text>
+
+            <!-- 8: Browser → Fathom : GET /imanage/connect/callback -->
+            <line x1="340" y1="450" x2="575" y2="450" stroke="#1a1a1a" stroke-width="1.5" marker-end="url(#arrow)"/>
+            <circle cx="340" cy="450" r="12" fill="#EB0028"/>
+            <text x="340" y="454" text-anchor="middle" fill="white">8</text>
+            <text x="458" y="442" text-anchor="middle" fill="#575757" font-size="12">GET /imanage/connect/callback</text>
+
+            <!-- 9: Fathom → iManage : POST /token (PKCE exchange) -->
+            <line x1="580" y1="490" x2="795" y2="490" stroke="#1a1a1a" stroke-width="1.5" marker-end="url(#arrow)"/>
+            <circle cx="580" cy="490" r="12" fill="#EB0028"/>
+            <text x="580" y="494" text-anchor="middle" fill="white">9</text>
+            <text x="688" y="482" text-anchor="middle" fill="#2E7D32" font-size="12">POST /auth/oauth2/token + code_verifier</text>
+
+            <!-- 10: iManage → Fathom : access_token + refresh_token -->
+            <line x1="800" y1="530" x2="585" y2="530" stroke="#1a1a1a" stroke-width="1.5" marker-end="url(#arrow)"/>
+            <circle cx="800" cy="530" r="12" fill="#EB0028"/>
+            <text x="800" y="534" text-anchor="middle" fill="white">10</text>
+            <text x="690" y="522" text-anchor="middle" fill="#2E7D32" font-size="12">access_token + refresh_token</text>
+
+            <!-- 11: Fathom self: encrypt + persist -->
+            <path d="M 580 565 Q 640 565 640 585 Q 640 605 580 605" fill="none" stroke="#EB0028" stroke-width="1.5" marker-end="url(#arrow-red)"/>
+            <circle cx="580" cy="570" r="12" fill="#EB0028"/>
+            <text x="580" y="574" text-anchor="middle" fill="white">11</text>
+            <text x="670" y="590" text-anchor="start" fill="#EB0028" font-size="11" font-weight="700">🔒 Encrypt with IDataProtector,</text>
+            <text x="670" y="604" text-anchor="start" fill="#EB0028" font-size="11" font-weight="700">store in Azure Table Storage</text>
+
+            <!-- 12: Fathom → Browser : redirect to return URL -->
+            <line x1="580" y1="650" x2="345" y2="650" stroke="#1a1a1a" stroke-width="1.5" marker-end="url(#arrow)"/>
+            <circle cx="580" cy="650" r="12" fill="#EB0028"/>
+            <text x="580" y="654" text-anchor="middle" fill="white">12</text>
+            <text x="462" y="642" text-anchor="middle" fill="#604775" font-size="12">302 → /Projects (connected!)</text>
+
+            <!-- 13: Browser → User : page rendered, "connected" badge -->
+            <line x1="340" y1="690" x2="105" y2="690" stroke="#1a1a1a" stroke-width="1.5" marker-end="url(#arrow)"/>
+            <circle cx="340" cy="690" r="12" fill="#EB0028"/>
+            <text x="340" y="694" text-anchor="middle" fill="white">13</text>
+            <text x="220" y="682" text-anchor="middle" fill="#575757" font-size="12">Connected ✓</text>
+          </g>
+        </svg>
+      </div>
+    </section>
+
+    <!-- ========================= STEP BY STEP ========================= -->
+    <section>
+      <h2>Step by Step</h2>
+      <div class="steps">
+
+        <!-- Step 1 -->
+        <article class="step">
+          <div class="step-number">1</div>
+          <div class="step-card">
+            <div class="actors">
+              <span class="pill user">User</span>
+              <span class="arrow">→</span>
+              <span class="pill browser">Browser</span>
+            </div>
+            <h3>The user clicks "Connect iManage"</h3>
+            <p class="narrative">
+              Tim opens Fathom, sees a banner saying his iManage account isn't linked,
+              and clicks the <em>Connect</em> button. Nothing magical here — it's a
+              plain hyperlink to a Fathom endpoint.
+            </p>
+            <div class="tech">
+              <div class="label">HTTP Request</div>
+              <span class="method-get">GET</span> /imanage/connect?returnUrl=/Projects/abc-123
+            </div>
+          </div>
+        </article>
+
+        <!-- Step 2 -->
+        <article class="step">
+          <div class="step-number">2</div>
+          <div class="step-card">
+            <div class="actors">
+              <span class="pill browser">Browser</span>
+              <span class="arrow">→</span>
+              <span class="pill fathom">Fathom</span>
+            </div>
+            <h3>Fathom prepares the handshake</h3>
+            <p class="narrative">
+              The <span class="ref">ImanageAuthController.Connect</span> action receives the
+              request. It needs two pieces of cryptographic prep before sending the
+              user to iManage: a <em>PKCE code verifier</em> and a <em>CSRF state</em>.
+            </p>
+            <div class="tech">
+              <div class="label">What Fathom generates</div>
+              <span class="key">codeVerifier</span>   = 43-128 char random string (URL-safe base64)<br>
+              <span class="key">codeChallenge</span>  = base64url( SHA-256( codeVerifier ) )<br>
+              <span class="key">state</span>          = 32 bytes of randomness, hex-encoded<br>
+              <span class="comment">// All three are bound to the user's session via</span><br>
+              <span class="comment">// an encrypted HttpOnly cookie (IDataProtector).</span>
+            </div>
+            <div class="why">
+              <strong>Why the state?</strong>
+              Prevents a malicious third party from initiating a login flow that
+              ends with <em>their</em> code being exchanged in <em>your</em> session.
+              We check state matches on the callback.
+            </div>
+          </div>
+        </article>
+
+        <!-- Step 3 -->
+        <article class="step">
+          <div class="step-number">3</div>
+          <div class="step-card">
+            <div class="actors">
+              <span class="pill fathom">Fathom</span>
+              <span class="arrow">→</span>
+              <span class="pill browser">Browser</span>
+            </div>
+            <h3>Redirect the browser to iManage</h3>
+            <p class="narrative">
+              Fathom doesn't talk to iManage yet — it just hands the browser a URL
+              and a 302. The browser will go ask iManage on its own. Crucially,
+              we send the SHA-256 <em>challenge</em>, not the verifier itself.
+            </p>
+            <div class="tech">
+              <div class="label">HTTP Response</div>
+              <span class="method-302">302 Found</span><br>
+              Location: https://cloudimanage.com/auth/oauth2/authorize?<br>
+              &nbsp;&nbsp;<span class="key">response_type</span>=code&amp;<br>
+              &nbsp;&nbsp;<span class="key">client_id</span>=B7723432-F804-…&amp;<br>
+              &nbsp;&nbsp;<span class="key">redirect_uri</span>=https://app.fathom/imanage/connect/callback&amp;<br>
+              &nbsp;&nbsp;<span class="key">code_challenge</span>=Bm83…lqA&amp;<br>
+              &nbsp;&nbsp;<span class="key">code_challenge_method</span>=S256&amp;<br>
+              &nbsp;&nbsp;<span class="key">state</span>=7f1a…&amp;<br>
+              &nbsp;&nbsp;<span class="key">scope</span>=user<br>
+              Set-Cookie: fathom.imanage.connect=&lt;encrypted blob&gt; <span class="comment">// holds verifier+state</span>
+            </div>
+          </div>
+        </article>
+
+        <!-- Step 4 -->
+        <article class="step">
+          <div class="step-number">4</div>
+          <div class="step-card">
+            <div class="actors">
+              <span class="pill browser">Browser</span>
+              <span class="arrow">→</span>
+              <span class="pill imanage">iManage</span>
+            </div>
+            <h3>The browser visits iManage</h3>
+            <p class="narrative">
+              The user's browser follows the 302 and ends up at
+              <code>cloudimanage.com</code>. iManage receives the authorize request and
+              recognizes Fathom by its <em>client_id</em>. It checks the redirect_uri
+              against its registered list — if it's not on the list, the flow halts here.
+            </p>
+            <div class="why">
+              <strong>What if my redirect_uri isn't registered?</strong>
+              iManage's authorize endpoint returns an error page. This is the OAuth
+              spec — a defense against attackers tricking the IdP into sending a
+              code to an attacker-controlled URL. That's why we have to register each
+              environment's callback URL in iManage Control Center.
+            </div>
+          </div>
+        </article>
+
+        <!-- Step 5 -->
+        <article class="step">
+          <div class="step-number">5</div>
+          <div class="step-card">
+            <div class="actors">
+              <span class="pill imanage">iManage</span>
+              <span class="arrow">↔</span>
+              <span class="pill user">User</span>
+            </div>
+            <h3>The user proves who they are</h3>
+            <p class="narrative">
+              iManage shows its own login page. The user types their username and
+              password, possibly does SSO via SAML, possibly does MFA. <em>Fathom
+              never sees any of this.</em> That's the whole point of the OAuth
+              dance — the user's credentials stay between them and the IdP.
+            </p>
+            <div class="why">
+              <strong>The point of OAuth</strong>
+              In the old world (and in Fathom's current service-account flow),
+              Fathom would have the user's password and send it to iManage on their
+              behalf. With OAuth, Fathom never sees it. Compromising Fathom doesn't
+              compromise iManage credentials.
+            </div>
+          </div>
+        </article>
+
+        <!-- Step 6 -->
+        <article class="step">
+          <div class="step-number">6</div>
+          <div class="step-card">
+            <div class="actors">
+              <span class="pill imanage">iManage</span>
+              <span class="arrow">→</span>
+              <span class="pill browser">Browser</span>
+            </div>
+            <h3>iManage sends back an "authorization code"</h3>
+            <p class="narrative">
+              After authentication succeeds, iManage 302s the browser back to the
+              registered callback with a <em>short-lived authorization code</em>
+              (10-minute lifetime, single-use). This code is NOT the access token —
+              it's a temporary handle that must be exchanged.
+            </p>
+            <div class="tech">
+              <div class="label">HTTP Response (from iManage)</div>
+              <span class="method-302">302 Found</span><br>
+              Location: https://app.fathom/imanage/connect/callback?<br>
+              &nbsp;&nbsp;<span class="key">code</span>=Z3Q1bF8…&amp;<br>
+              &nbsp;&nbsp;<span class="key">state</span>=7f1a… <span class="comment">// the same state Fathom generated</span>
+            </div>
+          </div>
+        </article>
+
+        <!-- Step 7 -->
+        <article class="step">
+          <div class="step-number">7</div>
+          <div class="step-card">
+            <div class="actors">
+              <span class="pill browser">Browser</span>
+              <span class="arrow">→</span>
+              <span class="pill fathom">Fathom</span>
+            </div>
+            <h3>Fathom validates the callback</h3>
+            <p class="narrative">
+              <span class="ref">ImanageAuthController.Callback</span> wakes up. It pulls
+              the encrypted cookie, decrypts it, and checks: <em>does the state
+              parameter match what we issued?</em> If not — abort. If yes, we have
+              our codeVerifier ready for the exchange.
+            </p>
+            <div class="tech">
+              <div class="label">Validation</div>
+              <span class="comment">// 1. Decrypt the cookie:</span><br>
+              { codeVerifier, state, returnUrl } = protector.<span class="key">Unprotect</span>(cookie)<br>
+              <span class="comment">// 2. Compare states (constant-time):</span><br>
+              if (received.state != stored.state) <span class="method-401">return Unauthorized()</span><br>
+              <span class="comment">// 3. Drop the cookie — it's single-use.</span>
+            </div>
+          </div>
+        </article>
+
+        <!-- Step 8 -->
+        <article class="step">
+          <div class="step-number">8</div>
+          <div class="step-card">
+            <div class="actors">
+              <span class="pill fathom">Fathom</span>
+              <span class="arrow">→</span>
+              <span class="pill imanage">iManage</span>
+            </div>
+            <h3>The PKCE exchange — code for tokens</h3>
+            <p class="narrative">
+              Fathom makes a <em>server-to-server</em> call to iManage's token
+              endpoint. It sends the authorization code, the original codeVerifier
+              (now finally revealed), and its client_secret. iManage verifies that
+              <code>SHA-256(codeVerifier) == codeChallenge</code> from step 3.
+            </p>
+            <div class="tech">
+              <div class="label">HTTP Request</div>
+              <span class="method-post">POST</span> https://cloudimanage.com/auth/oauth2/token<br>
+              Content-Type: application/x-www-form-urlencoded<br><br>
+              <span class="key">grant_type</span>=authorization_code&amp;<br>
+              <span class="key">code</span>=Z3Q1bF8…&amp;<br>
+              <span class="key">code_verifier</span>=&lt;raw verifier from step 2&gt;&amp;<br>
+              <span class="key">client_id</span>=B7723432-…&amp;<br>
+              <span class="key">client_secret</span>=DA74B241-…&amp;<br>
+              <span class="key">redirect_uri</span>=https://app.fathom/imanage/connect/callback
+            </div>
+            <div class="why">
+              <strong>This is the PKCE moment</strong>
+              An attacker who intercepted the code in step 6 can't redeem it
+              without also having the codeVerifier — which never left Fathom's
+              server. The cryptographic binding makes code interception useless.
+            </div>
+          </div>
+        </article>
+
+        <!-- Step 9 -->
+        <article class="step">
+          <div class="step-number">9</div>
+          <div class="step-card">
+            <div class="actors">
+              <span class="pill imanage">iManage</span>
+              <span class="arrow">→</span>
+              <span class="pill fathom">Fathom</span>
+            </div>
+            <h3>iManage returns the tokens</h3>
+            <p class="narrative">
+              If everything checks out, iManage issues a fresh <em>access token</em>
+              (use this on API calls) and a <em>refresh token</em> (use this to get
+              a new access token when the current one expires).
+            </p>
+            <div class="tech">
+              <div class="label">HTTP Response</div>
+              <span class="method-200">200 OK</span><br>
+              Content-Type: application/json<br><br>
+              {<br>
+              &nbsp;&nbsp;"<span class="key">access_token</span>":  "<span class="str">eyJhbGc…</span>",<br>
+              &nbsp;&nbsp;"<span class="key">refresh_token</span>": "<span class="str">r1g2T…</span>",<br>
+              &nbsp;&nbsp;"<span class="key">token_type</span>":    "Bearer",<br>
+              &nbsp;&nbsp;"<span class="key">expires_in</span>":    3600<br>
+              }
+            </div>
+          </div>
+        </article>
+
+        <!-- Step 10 -->
+        <article class="step">
+          <div class="step-number">10</div>
+          <div class="step-card">
+            <div class="actors">
+              <span class="pill fathom">Fathom</span>
+              <span class="arrow">→</span>
+              <span class="pill fathom">Fathom</span>
+            </div>
+            <h3>Encrypt and persist 🔒</h3>
+            <p class="narrative">
+              Fathom encrypts both tokens with <code>IDataProtector</code> (purpose
+              <code>fathom.imanage-tokens.v1</code>) and writes a single row to the
+              <code>UserImanageTokens</code> Azure Table, keyed by the user's Entra
+              OID. The tokens never sit unencrypted on disk.
+            </p>
+            <div class="tech">
+              <div class="label">Storage operation</div>
+              <span class="ref">ImanageTokenStore.UpsertAsync(entraOid, tokens)</span><br><br>
+              entity.<span class="key">PartitionKey</span> = entraOid;  <span class="comment">// the user</span><br>
+              entity.<span class="key">RowKey</span>       = "imanage";  <span class="comment">// one row per user</span><br>
+              entity.<span class="key">AccessTokenProtected</span>  = protector.Protect(access);<br>
+              entity.<span class="key">RefreshTokenProtected</span> = protector.Protect(refresh);<br>
+              entity.<span class="key">AccessTokenExpiry</span>     = utcNow + expires_in;
+            </div>
+            <p>
+              Finally, Fathom 302s the browser back to wherever the user started
+              (the <code>returnUrl</code> we carried through the cookie). The
+              user sees a "Connected ✓" badge. The handshake is done.
+            </p>
+          </div>
+        </article>
+
+      </div>
+    </section>
+
+    <!-- ========================= PKCE EXPLAINER ========================= -->
+    <section class="pkce">
+      <h3>The PKCE trick — in 30 seconds</h3>
+      <p>
+        Without PKCE, an attacker who intercepts the authorization code (e.g.,
+        via a malicious browser extension or a logged URL) could exchange it for
+        a token. PKCE binds the code to a secret that <em>only Fathom's server
+        knows</em>, even if everything else in the flow leaks.
+      </p>
+      <div class="pkce-grid">
+        <div class="pkce-box">
+          <div class="label">Step 2 · Sent over the wire</div>
+          <code>code_challenge = SHA-256(verifier)</code>
+        </div>
+        <div class="pkce-box">
+          <div class="label">Step 8 · Never sent until now</div>
+          <code>code_verifier = &lt;original random bytes&gt;</code>
+        </div>
+      </div>
+      <p style="margin-top: 20px; font-size: 14px; opacity: 0.9;">
+        iManage verifies <code>SHA-256(verifier) == challenge</code>. A one-way
+        hash means an attacker who saw the challenge can't reverse it to find the
+        verifier. Even capturing every redirect in the user's browser doesn't help
+        — the verifier never leaves Fathom's server until the final server-to-server
+        token exchange.
+      </p>
+    </section>
+
+    <!-- ========================= TOKEN REFRESH ========================= -->
+    <section>
+      <h2>What Happens When Tokens Expire?</h2>
+      <p>
+        Access tokens are short-lived (typically one hour). Refresh tokens live
+        much longer (days to weeks). Fathom handles the rotation transparently
+        so the user doesn't notice.
+      </p>
+      <div class="refresh-grid">
+        <div class="refresh-card">
+          <h4>① Detect</h4>
+          <p>
+            Before any iManage API call, Fathom checks
+            <code>AccessTokenExpiry &lt; UtcNow + 60s</code>.
+            The 60-second buffer covers clock skew.
+          </p>
+        </div>
+        <div class="refresh-card">
+          <h4>② Refresh</h4>
+          <p>
+            POST to <code>/auth/oauth2/token</code> with
+            <code>grant_type=refresh_token</code> + the stored refresh_token.
+            iManage returns a new access_token (and may rotate the refresh_token).
+          </p>
+        </div>
+        <div class="refresh-card">
+          <h4>③ Persist + retry</h4>
+          <p>
+            Re-encrypt and upsert. The original API call retries automatically
+            with the new token. If the refresh itself fails (e.g., user revoked
+            access in iManage), the user is asked to reconnect.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========================= STORAGE ========================= -->
+    <section>
+      <h2>What's Stored Where?</h2>
+      <div class="storage">
+        <p style="margin-top: 0;">
+          A single row per user in <code>UserImanageTokens</code> (Azure Table
+          Storage). Encrypted columns are flagged 🔒.
+        </p>
+        <div class="storage-table">
+          <div class="head">Column</div>
+          <div class="head">Type</div>
+          <div class="head">Example</div>
+          <div class="head">Notes</div>
+
+          <div><code>PartitionKey</code></div>
+          <div>string</div>
+          <div><code>a1b2-c3d4-…</code></div>
+          <div>User's Entra OID</div>
+
+          <div><code>RowKey</code></div>
+          <div>string</div>
+          <div><code>imanage</code></div>
+          <div>Sentinel — one row per user</div>
+
+          <div><code>ImanageUsername</code></div>
+          <div>string</div>
+          <div><code>tcuculic@lowenstein.com</code></div>
+          <div>Display only</div>
+
+          <div class="encrypted"><code>AccessTokenProtected</code></div>
+          <div>string</div>
+          <div><code>CfDJ8...</code></div>
+          <div>IDataProtector envelope</div>
+
+          <div class="encrypted"><code>RefreshTokenProtected</code></div>
+          <div>string</div>
+          <div><code>CfDJ8...</code></div>
+          <div>IDataProtector envelope</div>
+
+          <div><code>AccessTokenExpiry</code></div>
+          <div>DateTime</div>
+          <div><code>2026-05-23T15:42:00Z</code></div>
+          <div>UTC — drives refresh logic</div>
+
+          <div><code>ConnectedAt</code></div>
+          <div>DateTime</div>
+          <div><code>2026-05-12T09:14:33Z</code></div>
+          <div>When user first linked</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========================= GLOSSARY ========================= -->
+    <section>
+      <h2>Glossary</h2>
+      <div class="glossary">
+        <dl class="term">
+          <dt>Authorization Code</dt>
+          <dd>
+            A short-lived, single-use token iManage hands to the browser after
+            login. Useless on its own — must be exchanged for an access token.
+          </dd>
+        </dl>
+        <dl class="term">
+          <dt>PKCE (S256)</dt>
+          <dd>
+            "Proof Key for Code Exchange." A random verifier is hashed into a
+            challenge; the challenge goes out, the verifier stays home. Binds
+            the authorization code to the originating session.
+          </dd>
+        </dl>
+        <dl class="term">
+          <dt>State</dt>
+          <dd>
+            CSRF token bound to the user's session. We check it on the callback
+            so an attacker can't trick a user's browser into completing
+            someone else's OAuth flow.
+          </dd>
+        </dl>
+        <dl class="term">
+          <dt>Access Token</dt>
+          <dd>
+            Bearer token used on iManage API calls (header
+            <code>X-Auth-Token</code>). Lifetime ~1 hour. Treat as a password —
+            never log, never transmit unencrypted.
+          </dd>
+        </dl>
+        <dl class="term">
+          <dt>Refresh Token</dt>
+          <dd>
+            Long-lived token used to mint new access tokens silently. Lives in
+            the encrypted DB column. May be rotated on each use.
+          </dd>
+        </dl>
+        <dl class="term">
+          <dt>Entra OID</dt>
+          <dd>
+            The user's unique identifier in Azure Entra (formerly Azure AD).
+            Fathom uses this as the partition key for token storage so
+            per-user lookups are constant-time.
+          </dd>
+        </dl>
+        <dl class="term">
+          <dt>IDataProtector</dt>
+          <dd>
+            ASP.NET Core's at-rest encryption API. Keys live in
+            <code>%LOCALAPPDATA%\ASP.NET\DataProtection-Keys</code> in dev;
+            in prod they should be persisted to Key Vault or Blob.
+          </dd>
+        </dl>
+        <dl class="term">
+          <dt>Redirect URI</dt>
+          <dd>
+            The exact URL iManage will send the auth code to. Must be
+            pre-registered in iManage Control Center per environment — no
+            wildcards, no near-misses.
+          </dd>
+        </dl>
+      </div>
+    </section>
+
+    <footer>
+      Code references: <code>Controllers/ImanageAuthController.cs</code> ·
+      <code>Services/ImanageTokenStore.cs</code> ·
+      <code>Models/ProjectModels.cs:UserImanageTokenEntity</code><br>
+      Authoritative iManage spec: <code>c:\source\imanageapidocumentation\</code><br>
+      Brand: Lowenstein Sandler LS Design System
+    </footer>
+  </main>
+</body>
+</html>
