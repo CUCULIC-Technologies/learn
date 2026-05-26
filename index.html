@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="color-scheme" content="light dark" />
+<title>Learn — Tim's Learning Resources</title>
+<style>
+  :root {
+    --bg: #fafaf9;
+    --surface: #ffffff;
+    --border: #e7e5e4;
+    --ink: #1c1917;
+    --muted: #78716c;
+    --accent: #c2410c;
+    --accent-soft: #fef3ec;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0c0a09;
+      --surface: #1c1917;
+      --border: #292524;
+      --ink: #fafaf9;
+      --muted: #a8a29e;
+      --accent: #fb923c;
+      --accent-soft: #2a1a10;
+    }
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { -webkit-font-smoothing: antialiased; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+    line-height: 1.5;
+    min-height: 100vh;
+    padding: 4rem 1.5rem;
+  }
+
+  .container {
+    max-width: 720px;
+    margin: 0 auto;
+  }
+
+  header {
+    margin-bottom: 3rem;
+    padding-bottom: 2rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .eyebrow {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--accent);
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+  }
+
+  h1 {
+    font-size: 2.25rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    margin-bottom: 0.75rem;
+  }
+
+  .subtitle {
+    color: var(--muted);
+    font-size: 1.05rem;
+  }
+
+  .section-label {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--muted);
+    font-weight: 600;
+    margin-bottom: 1rem;
+  }
+
+  .resource-list {
+    list-style: none;
+    display: grid;
+    gap: 0.75rem;
+  }
+
+  .resource-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1.25rem 1.5rem;
+    transition: border-color 0.15s ease, transform 0.15s ease;
+  }
+
+  .resource-card:hover {
+    border-color: var(--accent);
+    transform: translateY(-1px);
+  }
+
+  .resource-card a {
+    color: inherit;
+    text-decoration: none;
+    display: block;
+  }
+
+  .resource-title {
+    font-size: 1.125rem;
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .resource-title::after {
+    content: "→";
+    color: var(--muted);
+    transition: transform 0.15s ease, color 0.15s ease;
+  }
+
+  .resource-card:hover .resource-title::after {
+    color: var(--accent);
+    transform: translateX(2px);
+  }
+
+  .resource-desc {
+    color: var(--muted);
+    font-size: 0.9375rem;
+  }
+
+  .tag {
+    display: inline-block;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 0.125rem 0.5rem;
+    border-radius: 4px;
+    background: var(--accent-soft);
+    color: var(--accent);
+    margin-left: 0.5rem;
+    vertical-align: middle;
+  }
+
+  footer {
+    margin-top: 4rem;
+    padding-top: 2rem;
+    border-top: 1px solid var(--border);
+    color: var(--muted);
+    font-size: 0.875rem;
+    text-align: center;
+  }
+
+  footer a {
+    color: var(--accent);
+    text-decoration: none;
+  }
+
+  footer a:hover {
+    text-decoration: underline;
+  }
+</style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="eyebrow">Learn</div>
+      <h1>Learning Resources</h1>
+      <p class="subtitle">A central place for self-paced learning pages, field guides, and reference material.</p>
+    </header>
+
+    <main>
+      <div class="section-label">Resources</div>
+      <ul class="resource-list">
+        <li class="resource-card">
+          <a href="/pages/claude-toolbox.html">
+            <div class="resource-title">
+              The Claude Code Plugin Catalog
+              <span class="tag">Field Guide</span>
+            </div>
+            <div class="resource-desc">An illustrated reference to every plugin and language server in the Claude Code toolbox — what each one does and when to reach for it.</div>
+          </a>
+        </li>
+      </ul>
+    </main>
+
+    <footer>
+      Built with HTML, hosted on Vercel. <a href="https://github.com/" target="_blank" rel="noopener">View source</a>
+    </footer>
+  </div>
+</body>
+</html>
