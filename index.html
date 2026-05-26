@@ -132,6 +132,15 @@
     font-size: 0.9375rem;
   }
 
+  .resource-desc code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 0.85em;
+    padding: 0.0625rem 0.3125rem;
+    background: var(--accent-soft);
+    color: var(--accent);
+    border-radius: 3px;
+  }
+
   .tag {
     display: inline-block;
     font-size: 0.6875rem;
@@ -183,6 +192,15 @@
               <span class="tag">Field Guide</span>
             </div>
             <div class="resource-desc">An illustrated reference to every plugin and language server in the Claude Code toolbox — what each one does and when to reach for it.</div>
+          </a>
+        </li>
+        <li class="resource-card">
+          <a href="/pages/git-checkout-visualizer.html">
+            <div class="resource-title">
+              Git Checkout Visualizer
+              <span class="tag">Interactive</span>
+            </div>
+            <div class="resource-desc">An interactive visualization of how <code>git checkout</code> moves HEAD around the commit graph — branches, detached HEAD, and what actually changes in your working tree.</div>
           </a>
         </li>
       </ul>
