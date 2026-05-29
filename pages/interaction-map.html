@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>InterAction Server Environment</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,900&display=swap');
+
+  :root{
+    --bg:#0a0e1a;
+    --bg2:#101627;
+    --ink:#e8ecf5;
+    --muted:#8893ac;
+    --app:#f0d264;       /* yellow tier - app */
+    --app2:#e3b94a;
+    --db:#5aa9f0;        /* blue - database */
+    --db2:#3d7fc4;
+    --integ:#f0a85a;     /* orange tier - api/integration */
+    
+    --line:#39456b;
+    --line-hot:#5aa9f0;
+    --glow:rgba(90,169,240,.55);
+    --card:#161d33;
+    --grid:rgba(255,255,255,.025);
+  }
+
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html,body{height:100%;}
+  body{
+    background:
+      radial-gradient(1200px 700px at 50% -10%, #16203b 0%, transparent 60%),
+      linear-gradient(160deg,var(--bg) 0%, var(--bg2) 100%);
+    color:var(--ink);
+    font-family:'Space Mono',monospace;
+    min-height:100vh;
+    overflow-x:hidden;
+    padding:40px 20px 80px;
+  }
+  body::before{
+    content:"";position:fixed;inset:0;pointer-events:none;z-index:0;
+    background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);
+    background-size:44px 44px;
+    mask-image:radial-gradient(circle at 50% 35%,#000 0%,transparent 75%);
+  }
+
+  header{position:relative;z-index:2;text-align:center;margin-bottom:14px;}
+  header .kicker{
+    font-size:.72rem;letter-spacing:.42em;color:var(--db);text-transform:uppercase;
+    opacity:0;animation:rise .7s .1s forwards;
+  }
+  header h1{
+    font-family:'Fraunces',serif;font-weight:900;font-size:clamp(2.1rem,6vw,4rem);
+    letter-spacing:-.02em;line-height:1;margin:.25em 0 .15em;
+    background:linear-gradient(120deg,#fff,#9cc4f5 60%,#f0d264);
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+    opacity:0;animation:rise .7s .2s forwards;
+  }
+  header p{color:var(--muted);font-size:.82rem;max-width:560px;margin:0 auto;opacity:0;animation:rise .7s .3s forwards;}
+
+  .legend{display:flex;gap:18px;justify-content:center;flex-wrap:wrap;margin:18px 0 6px;position:relative;z-index:2;opacity:0;animation:rise .7s .4s forwards;}
+  .legend span{display:flex;align-items:center;gap:7px;font-size:.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:.12em;}
+  .dot{width:11px;height:11px;border-radius:3px;}
+  .dot.app{background:var(--app);}
+  .dot.db{background:var(--db);border-radius:50%;}
+  .dot.integ{background:var(--integ);}
+
+  .stage{
+    position:relative;z-index:1;max-width:1180px;margin:30px auto 0;
+    display:grid;
+    grid-template-columns:1fr 1.15fr 1fr;
+    gap:38px 60px;align-items:center;
+  }
+  .col{display:flex;flex-direction:column;gap:30px;}
+  .col.left{grid-column:1;}
+  .col.center{grid-column:2;align-items:center;}
+  .col.right{grid-column:3;}
+
+  svg.wires{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:0;overflow:visible;}
+  .wire{fill:none;stroke:var(--line);stroke-width:2;stroke-dasharray:7 9;opacity:.5;
+    transition:stroke .3s,opacity .3s,stroke-width .3s;}
+  .wire.lit{stroke:var(--line-hot);opacity:1;stroke-width:3;filter:drop-shadow(0 0 6px var(--glow));
+    animation:flow 1s linear infinite;}
+  @keyframes flow{to{stroke-dashoffset:-32;}}
+
+  .node{
+    position:relative;background:var(--card);
+    border:1px solid #283150;border-radius:16px;
+    padding:18px 20px;cursor:pointer;
+    transition:transform .25s cubic-bezier(.2,.9,.3,1.3),border-color .25s,box-shadow .25s,background .25s;
+    opacity:0;transform:translateY(18px);
+  }
+  .stage.in .node{animation:rise .6s forwards;}
+  .node::before{content:"";position:absolute;left:0;top:14px;bottom:14px;width:4px;border-radius:4px;}
+  .node.app::before{background:linear-gradient(var(--app),var(--app2));}
+  .node.integ::before{background:linear-gradient(var(--integ),#d98a3a);}
+  .node.db::before{display:none;}
+  .node .tag{font-size:.62rem;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);margin-bottom:5px;}
+  .node .name{font-family:'Fraunces',serif;font-weight:600;font-size:1.32rem;letter-spacing:-.01em;}
+  .node .role{font-size:.72rem;color:var(--muted);margin-top:5px;line-height:1.45;}
+  .node .url{display:inline-block;font-size:.68rem;color:var(--db);margin-top:7px;word-break:break-all;}
+
+  .node:hover{transform:translateY(-5px) scale(1.025);border-color:#4a557e;}
+  .node.app:hover{border-color:var(--app);box-shadow:0 12px 34px -12px rgba(240,210,100,.5);}
+  .node.integ:hover{border-color:var(--integ);box-shadow:0 12px 34px -12px rgba(240,168,90,.5);}
+
+  .node.db{
+    background:linear-gradient(160deg,#1b2a47,#13203a);
+    border:1.5px solid var(--db2);text-align:center;padding:26px 22px;
+    box-shadow:0 0 0 1px rgba(90,169,240,.15),0 18px 50px -18px var(--glow);
+    width:100%;max-width:330px;
+  }
+  .node.db .name{font-size:1.6rem;color:#bcdcff;}
+  .node.db .tag{color:var(--db);}
+  .node.db:hover{transform:translateY(-4px) scale(1.03);box-shadow:0 0 0 1px var(--db),0 24px 60px -16px var(--glow);}
+  .pulse{position:absolute;inset:-2px;border-radius:18px;border:1.5px solid var(--db);opacity:0;pointer-events:none;}
+  .node.db .pulse{animation:pulse 3s ease-out infinite;}
+  @keyframes pulse{0%{opacity:.7;transform:scale(1);}100%{opacity:0;transform:scale(1.18);}}
+
+  .dblist{margin-top:16px;padding-top:14px;border-top:1px dashed #2f3f63;display:flex;flex-direction:column;gap:5px;}
+  .dblist b{font-size:.6rem;letter-spacing:.2em;color:var(--db);text-transform:uppercase;}
+  .dblist .db-item{font-size:.74rem;color:#9fb4d6;background:rgba(90,169,240,.08);border-radius:6px;padding:3px 8px;}
+
+  .dimmed{opacity:.22 !important;filter:saturate(.4);}
+  .node.active{transform:translateY(-5px) scale(1.04)!important;}
+  .node.app.active{border-color:var(--app);box-shadow:0 0 0 1px var(--app),0 16px 40px -14px rgba(240,210,100,.55);}
+  .node.integ.active{border-color:var(--integ);box-shadow:0 0 0 1px var(--integ),0 16px 40px -14px rgba(240,168,90,.55);}
+
+  /* detail panel */
+  .panel{
+    position:fixed;right:0;top:0;height:100%;width:min(380px,90vw);z-index:30;
+    background:linear-gradient(180deg,#121a30,#0c1124);
+    border-left:1px solid #2a3656;box-shadow:-20px 0 60px -20px #000;
+    transform:translateX(105%);transition:transform .4s cubic-bezier(.3,.9,.3,1);
+    padding:34px 28px;overflow-y:auto;
+  }
+  .panel.open{transform:translateX(0);}
+  .panel .close{position:absolute;top:18px;right:20px;background:none;border:none;color:var(--muted);font-size:1.4rem;cursor:pointer;font-family:'Space Mono';}
+  .panel .close:hover{color:#fff;}
+  .panel .ptag{font-size:.65rem;letter-spacing:.22em;text-transform:uppercase;}
+  .panel h2{font-family:'Fraunces',serif;font-size:1.9rem;font-weight:600;margin:6px 0 4px;}
+  .panel .pbody{font-size:.85rem;color:#b9c4dd;line-height:1.6;margin-top:16px;}
+  .panel .field{margin-top:18px;}
+  .panel .field h4{font-size:.62rem;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);margin-bottom:6px;}
+  .panel .field a,.panel .field .v{color:var(--db);font-size:.8rem;word-break:break-all;text-decoration:none;}
+  .panel .conn{display:flex;align-items:center;gap:8px;font-size:.82rem;color:#cdd8f0;margin-top:7px;}
+  .panel .conn .arrow{color:var(--db);}
+
+  footer{text-align:center;color:var(--muted);font-size:.68rem;margin-top:56px;letter-spacing:.1em;position:relative;z-index:2;}
+
+  @keyframes rise{to{opacity:1;transform:translateY(0);}}
+
+  @media(max-width:760px){
+    .stage{grid-template-columns:1fr;}
+    .col.left,.col.center,.col.right{grid-column:1;}
+    .col.center{order:-1;}
+    svg.wires{display:none;}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="kicker">Lowenstein · Infrastructure Map</div>
+  <h1>InterAction Server Environment</h1>
+  <p>A hub-and-spoke topology. Tap any server to trace its connections — everything orbits the database at the core.</p>
+</header>
+
+<div class="legend">
+  <span><i class="dot app"></i> Application Tier</span>
+  <span><i class="dot db"></i> Database Hub</span>
+  <span><i class="dot integ"></i> API / Integration Tier</span>
+</div>
+
+<div class="stage" id="stage">
+  <svg class="wires" id="wires"></svg>
+
+  <div class="col left">
+    <div class="node app" data-id="app">
+      <div class="tag">Application Server</div>
+      <div class="name">bet-IAApp01</div>
+      <div class="role">Main InterAction app server. User-facing front door.</div>
+      <span class="url">ia.lowenstein.com</span>
+    </div>
+    <div class="node app" data-id="pm1">
+      <div class="tag">Process Manager 1</div>
+      <div class="name">bet-IAPM01</div>
+      <div class="role">IA Jobs run here. ⚠ Stop jobs before migration.</div>
+    </div>
+    <div class="node app" data-id="pm2">
+      <div class="tag">Process Manager 2 · Backup</div>
+      <div class="name">bet-IAPM02</div>
+      <div class="role">IA utility scheduled tasks.</div>
+    </div>
+  </div>
+
+  <div class="col center">
+    <div class="node db" data-id="db">
+      <div class="pulse"></div>
+      <div class="tag">SQL Server · The Core</div>
+      <div class="name">ros-IADB01</div>
+      <div class="role">InterAction Database — every server depends on this.</div>
+      <div class="dblist">
+        <b>Databases</b>
+        <span class="db-item">InterAction</span>
+        <span class="db-item">InterAction_Integration</span>
+        <span class="db-item">InterAction_Purge</span>
+        <span class="db-item">InterAction_test</span>
+        <span class="db-item">IQDB</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="col right">
+    <div class="node integ" data-id="rest">
+      <div class="tag">AI REST Server</div>
+      <div class="name">bet-IARest01</div>
+      <div class="role">Exposes REST endpoints over InterAction data.</div>
+    </div>
+    <div class="node integ" data-id="api">
+      <div class="tag">IA API Server</div>
+      <div class="name">bet-IAPI01</div>
+      <div class="role">Inbound/outbound firewall rules to the cloud platform.</div>
+      <span class="url">lowenstein.apps.interaction.com</span>
+    </div>
+    <div class="node integ" data-id="iq">
+      <div class="tag">IA IQ Server</div>
+      <div class="name">bet-IAIQ01</div>
+      <div class="role">Data-quality engine, backed by IQDB.</div>
+      <span class="url">iaiq.lowenstein.com</span>
+    </div>
+  </div>
+</div>
+
+<div class="panel" id="panel">
+  <button class="close" id="close">✕</button>
+  <div class="ptag" id="ptag"></div>
+  <h2 id="ptitle"></h2>
+  <div class="pbody" id="pbody"></div>
+  <div class="field" id="purlfield" style="display:none">
+    <h4>Endpoint</h4>
+    <div id="purl"></div>
+  </div>
+  <div class="field">
+    <h4>Connections</h4>
+    <div id="pconn"></div>
+  </div>
+</div>
+
+<footer>Hub-and-spoke · All tiers read/write to ros-IADB01 · Built for Tim @ Lowenstein</footer>
+
+<script>
+const DATA = {
+  app:{tier:'Application Tier',color:'#f0d264',title:'bet-IAApp01',
+    body:'The primary InterAction application server and the user-facing front door. Web requests come in through the external URLs, get processed here, and are persisted to the central database. The Vuture integration reaches the firm through the interaction.lowenstein.com endpoint.',
+    urls:['ia.lowenstein.com','interaction.lowenstein.com (external URL for Vuture)'],
+    conn:[['→','ros-IADB01 (reads/writes user data)']]},
+  pm1:{tier:'Application Tier',color:'#f0d264',title:'bet-IAPM01',
+    body:'Process Manager 1 — this is where InterAction Jobs actually execute against the database. Because these jobs write directly to the DB, they MUST be stopped before any migration to avoid mid-write corruption.',
+    conn:[['→','ros-IADB01 (jobs write directly)'],['⚠','Stop jobs before migration']]},
+  pm2:{tier:'Application Tier',color:'#f0d264',title:'bet-IAPM02',
+    body:'Backup Process Manager 2. Runs the IA utility scheduled tasks as a secondary worker. Like PM1, it operates against the same central database.',
+    conn:[['→','ros-IADB01 (scheduled task I/O)']]},
+  db:{tier:'Database Hub · The Core',color:'#5aa9f0',title:'ros-IADB01',
+    body:'The single point everything depends on. This SQL Server hosts all five InterAction databases. Application servers, process managers, and the entire API/integration tier all read from and write to this hub. An outage or migration here ripples across the whole environment.',
+    conn:[['◀▶','bet-IAApp01'],['◀▶','bet-IAPM01 / bet-IAPM02'],['◀▶','bet-IARest01'],['◀▶','bet-IAPI01'],['◀▶','bet-IAIQ01 (via IQDB)']]},
+  rest:{tier:'API / Integration Tier',color:'#f0a85a',title:'bet-IARest01',
+    body:'The AI REST server. Exposes REST endpoints layered over InterAction data, enabling programmatic and AI-driven access to the system.',
+    conn:[['→','ros-IADB01 (data source)']]},
+  api:{tier:'API / Integration Tier',color:'#f0a85a',title:'bet-IAPI01',
+    body:'The IA API server — the bridge to InterAction\'s cloud platform. It carries specific inbound/outbound firewall rules connecting out to the cloud endpoint. This is your gateway between on-prem and the InterAction cloud.',
+    urls:['lowenstein.apps.interaction.com (inbound/outbound firewall rules)'],
+    conn:[['→','ros-IADB01'],['↔','Cloud: lowenstein.apps.interaction.com']]},
+  iq:{tier:'API / Integration Tier',color:'#f0a85a',title:'bet-IAIQ01',
+    body:'The InterAction IQ server — the data-quality engine. Served at its own URL and backed specifically by the IQDB database on the central SQL Server.',
+    urls:['iaiq.lowenstein.com'],
+    conn:[['→','ros-IADB01 (IQDB)']]},
+};
+
+const stage = document.getElementById('stage');
+const wires = document.getElementById('wires');
+const nodes = [...document.querySelectorAll('.node')];
+
+// stagger entrance
+nodes.forEach((n,i)=>n.style.animationDelay=(0.5+i*0.09)+'s');
+setTimeout(()=>stage.classList.add('in'),60);
+
+function center(el){
+  const r=el.getBoundingClientRect(), s=stage.getBoundingClientRect();
+  return {x:r.left-s.left+r.width/2, y:r.top-s.top+r.height/2,
+          left:r.left-s.left, right:r.right-s.left, w:r.width};
+}
+
+const dbNode = document.querySelector('.node.db');
+function drawWires(){
+  wires.innerHTML='';
+  const db=center(dbNode);
+  nodes.filter(n=>n.dataset.id!=='db').forEach(n=>{
+    const c=center(n);
+    const fromX = c.x<db.x ? c.right : c.left;
+    const toX   = c.x<db.x ? db.left : db.right;
+    const midX=(fromX+toX)/2;
+    const p=document.createElementNS('http://www.w3.org/2000/svg','path');
+    p.setAttribute('d',`M ${fromX} ${c.y} C ${midX} ${c.y}, ${midX} ${db.y}, ${toX} ${db.y}`);
+    p.setAttribute('class','wire');
+    p.dataset.for=n.dataset.id;
+    wires.appendChild(p);
+  });
+}
+drawWires();
+window.addEventListener('resize',drawWires);
+
+function litFor(id){
+  document.querySelectorAll('.wire').forEach(w=>{
+    if(id==='db'||id===null) w.classList.toggle('lit', id==='db');
+    else w.classList.toggle('lit', w.dataset.for===id);
+  });
+}
+
+// hover highlight
+nodes.forEach(n=>{
+  n.addEventListener('mouseenter',()=>{
+    const id=n.dataset.id;
+    litFor(id);
+    nodes.forEach(o=>{
+      if(id==='db'){o.classList.remove('dimmed');}
+      else if(o.dataset.id!==id && o.dataset.id!=='db') o.classList.add('dimmed');
+    });
+  });
+  n.addEventListener('mouseleave',()=>{
+    litFor(null);
+    nodes.forEach(o=>o.classList.remove('dimmed'));
+  });
+});
+
+// detail panel
+const panel=document.getElementById('panel');
+const pclose=document.getElementById('close');
+function openPanel(id){
+  const d=DATA[id];if(!d)return;
+  nodes.forEach(o=>o.classList.toggle('active',o.dataset.id===id));
+  document.getElementById('ptag').textContent=d.tier;
+  document.getElementById('ptag').style.color=d.color;
+  document.getElementById('ptitle').textContent=d.title;
+  document.getElementById('ptitle').style.color=d.color;
+  document.getElementById('pbody').textContent=d.body;
+  const uf=document.getElementById('purlfield'), uu=document.getElementById('purl');
+  if(d.urls){uf.style.display='block';uu.innerHTML=d.urls.map(u=>`<div class="v">${u}</div>`).join('');}
+  else uf.style.display='none';
+  document.getElementById('pconn').innerHTML=d.conn.map(c=>
+    `<div class="conn"><span class="arrow">${c[0]}</span> ${c[1]}</div>`).join('');
+  panel.classList.add('open');
+}
+nodes.forEach(n=>n.addEventListener('click',()=>openPanel(n.dataset.id)));
+pclose.addEventListener('click',()=>{panel.classList.remove('open');nodes.forEach(o=>o.classList.remove('active'));});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){panel.classList.remove('open');nodes.forEach(o=>o.classList.remove('active'));}});
+</script>
+</body>
+</html>
